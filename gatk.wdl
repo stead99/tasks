@@ -1039,6 +1039,54 @@ task MergeStats {
     }
 }
 
+# Combine multiple VCFs or GVCFs from scattered HaplotypeCaller runs
+task MergeVcfs {
+    input {
+        Array[File]+ inputVCFs
+        Array[File]+ inputVCFsIndexes
+        String outputVcfPath
+
+        String memory = "24G"
+        String javaXmx = "8G"
+        String dockerImage = "quay.io/biocontainers/gatk4:4.1.0.0--0"
+    }
+
+    # Using MergeVcfs instead of GatherVcfs so we can create indices
+    # See https://github.com/broadinstitute/picard/issues/789 for relevant GatherVcfs ticket
+
+    command {
+        set -e
+        mkdir -p "$(dirname ~{outputVcfPath})"
+        gatk -Xmx~{javaXmx} \
+        MergeVcfs \
+        I=~{sep=' I=' inputVCFs} \
+        O=~{outputVcfPath}
+    }
+
+    output {
+        File outputVcf = outputVcfPath
+        File outputVcfIndex = outputVcfPath + ".tbi"
+    }
+
+    runtime {
+        docker: dockerImage
+        memory: memory
+    }
+
+    parameter_meta {
+        # inputs
+        inputVCFs: {description: "The VCF files to be merged.", category: "required"}
+        inputVCFsIndexes: {description: "The indexes of the VCF files.", category: "required"}
+        outputVcfPath: {description: "The location the output VCF file should be written to.", category: "required"}
+
+        memory: {description: "The amount of memory this job will use.", category: "advanced"}
+        javaXmx: {description: "The maximum memory available to the program. Should be lower than `memory` to accommodate JVM overhead.",
+                  category: "advanced"}
+        dockerImage: {description: "The docker image used for this task. Changing this may result in errors which the developers may choose not to address.",
+                      category: "advanced"}
+    }
+}
+
 task ModelSegments {
     input {
         String outputDir = "."
