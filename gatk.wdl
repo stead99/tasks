@@ -1057,10 +1057,10 @@ task MergeVcfs {
     command {
         set -e
         mkdir -p "$(dirname ~{outputVcfPath})"
-        gatk -Xmx~{javaXmx} \
+        gatk --java-options -Xmx~{javaXmx} \
         MergeVcfs \
-        I=~{sep=' I=' inputVCFs} \
-        O=~{outputVcfPath}
+        --INPUT ~{sep=' --INPUT ' inputVCFs} \
+        --OUTPUT ~{outputVcfPath}
     }
 
     output {
